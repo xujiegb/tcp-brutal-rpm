@@ -2,10 +2,11 @@
 
 Standalone packaging repository for HyNetworks/tcp-brutal.
 One SPEC produces two independent binary packages: `tcp-brutal` (noarch)
-contains DKMS kernel module sources and `tcp-brutal-tools` (native architecture)
-contains `/usr/bin/brutalctl`. The source RPM is named `tcp-brutal-tools`.
+contains DKMS kernel module sources and `brutalctl` (native architecture)
+contains `/usr/bin/brutalctl`. The source RPM is named `brutalctl`.
 Neither binary package requires the other. The module package replaces the
-previous `tcp-brutal-dkms` package. RPM debuginfo packages may also be generated.
+previous `tcp-brutal-dkms` package; `brutalctl` replaces the previous
+`tcp-brutal-tools` package. RPM debuginfo packages may also be generated.
 
 ## Supported COPR build targets
 
@@ -35,7 +36,7 @@ packit srpm
 rpmdev-setuptree
 spectool -g -R tcp-brutal.spec
 rpmbuild -bs tcp-brutal.spec
-mock -r fedora-44-x86_64 --rebuild ~/rpmbuild/SRPMS/tcp-brutal-tools-*.src.rpm
+mock -r fedora-44-x86_64 --rebuild ~/rpmbuild/SRPMS/brutalctl-*.src.rpm
 ```
 
 ## Packit service
@@ -119,7 +120,7 @@ modinfo brutal
 Install the optional management utility separately:
 
 ```sh
-sudo dnf install tcp-brutal-tools
+sudo dnf install brutalctl
 sudo brutalctl list
 ```
 

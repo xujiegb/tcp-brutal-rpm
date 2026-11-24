@@ -1,6 +1,6 @@
 %global upstream_name tcp-brutal
 
-Name:           tcp-brutal-tools
+Name:           brutalctl
 Version:        2.0.1
 Release:        2%{?dist}
 %global dkms_version %{version}.%{release}
@@ -17,6 +17,8 @@ BuildRequires:  systemd-rpm-macros
 BuildRequires:  sed
 BuildRequires:  coreutils
 Requires:       iproute
+Provides:       tcp-brutal-tools = %{version}-%{release}
+Obsoletes:      tcp-brutal-tools < %{version}-%{release}
 
 %description
 brutalctl manages destination rules for the TCP Brutal congestion control
@@ -101,7 +103,8 @@ exit 0
 
 %changelog
 * Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-2
-- Split the kernel module and management utility and fix Packit source preparation.
+- Split tcp-brutal and brutalctl into independent packages.
+- Fix Packit source preparation.
 
 * Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-1
 - Initial COPR packaging for TCP Brutal 2.0.1.
