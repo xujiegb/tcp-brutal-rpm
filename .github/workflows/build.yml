@@ -14,7 +14,7 @@ jobs:
   build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -33,6 +33,30 @@ jobs:
             echo "::error::Release $tag already exists. Retry its Packit check or increment the RPM release."
             exit 1
           fi
+          workdir=$(mktemp -d)
+          trap 'rm -rf "$workdir"' EXIT
+          git clone --quiet "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "$workdir/repo"
+          git -C "$workdir/repo" checkout --quiet --detach "$sha"
+          docker run --rm \
+            -v "$workdir/repo:/work" -w /work \
+            -e EXPECTED_VERSION="$version" -e EXPECTED_RELEASE="$release" \
+            registry.fedoraproject.org/fedora:44 bash -euo pipefail -c '
+              dnf -y install packit git curl rpm-build systemd-rpm-macros tar gzip sed grep coreutils diffutils gcc glibc-devel make
+              git config --global --add safe.directory /work
+              packit config validate
+              packit --debug prepare-sources --job-config-index 0 --no-update-release --no-create-symlinks --result-dir /tmp/prepared /work
+              prepared_spec=$(find /tmp/prepared -type f -name tcp-brutal.spec)
+              test -f "$prepared_spec"
+              prepared_dir=$(dirname "$prepared_spec")
+              archive="tcp-brutal-$EXPECTED_VERSION.tar.gz"
+              grep -Fx "Version:        $EXPECTED_VERSION" "$prepared_spec"
+              grep -Fx "Release:        $EXPECTED_RELEASE%{?dist}" "$prepared_spec"
+              grep -Fx "Source0:        $archive" "$prepared_spec"
+              test -f "$prepared_dir/$archive"
+              tar -tzf "$prepared_dir/$archive" "tcp-brutal-$EXPECTED_VERSION/brutal_cc.c" "tcp-brutal-$EXPECTED_VERSION/tools/brutalctl.c" >/dev/null
+              mkdir -p /tmp/rpmbuild/BUILD
+              rpmbuild -bp --nodeps --define "_sourcedir $prepared_dir" --define "_builddir /tmp/rpmbuild/BUILD" "$prepared_spec"
+            '
           ref=$(git ls-remote --refs "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/tags/$tag")
           if [[ -n "$ref" ]]; then
             if [[ "$ref" != "$sha"$'\t'"refs/tags/$tag" ]]; then
