@@ -1,34 +1,55 @@
 specfile_path: tcp-brutal.spec
 upstream_package_name: tcp-brutal
-downstream_package_name: tcp-brutal-tools
-upstream_project_url: https://github.com/HyNetworks/tcp-brutal
-upstream_tag_template: v{version}
+downstream_package_name: brutalctl
 update_release: false
 
-srpm_build_deps:
+srpm_build_deps: &srpm_deps
+  - bash
   - curl
   - rpm-build
   - systemd-rpm-macros
+  - tar
+  - gzip
+  - sed
+  - grep
 
-actions:
+actions: &source_actions
   get-current-version:
-    - "rpmspec -q --srpm --qf '%{version}\\n' tcp-brutal.spec"
+    - >-
+      bash -eu -c 'sed -nE "s/^Version:[[:blank:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:blank:]]*$/\1/p" tcp-brutal.spec'
   create-archive:
     - >-
-      bash -eu -c 'version=$(rpmspec -q --srpm --qf "%{version}" tcp-brutal.spec);
+      bash -euo pipefail -c 'version=$(sed -nE "s/^Version:[[:blank:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:blank:]]*$/\1/p" tcp-brutal.spec);
+      [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]];
       archive="tcp-brutal-${version}.tar.gz";
       curl --fail --silent --show-error --location --retry 3
       --output "$archive"
       "https://github.com/HyNetworks/tcp-brutal/archive/refs/tags/v${version}.tar.gz";
+      tar -tzf "$archive" "tcp-brutal-${version}/tools/brutalctl.c" "tcp-brutal-${version}/brutal_cc.c" "tcp-brutal-${version}/scripts/mkdkmsconf.sh" >/dev/null;
       printf "%s\n" "$archive"'
   fix-spec-file:
-    - /usr/bin/true
+    - >-
+      bash -euo pipefail -c 'version=$(sed -nE "s/^Version:[[:blank:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:blank:]]*$/\1/p" tcp-brutal.spec);
+      [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]];
+      archive="tcp-brutal-${version}.tar.gz";
+      test -s "$archive";
+      sed -i -E "s|^Source0:.*|Source0:        $archive|" tcp-brutal.spec'
+  post-modifications:
+    - >-
+      bash -euo pipefail -c 'version=$(sed -nE "s/^Version:[[:blank:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:blank:]]*$/\1/p" tcp-brutal.spec);
+      [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]];
+      archive="tcp-brutal-${version}.tar.gz";
+      grep -Fx "Source0:        $archive" tcp-brutal.spec;
+      tar -tzf "$archive" "tcp-brutal-${version}/tools/brutalctl.c" "tcp-brutal-${version}/brutal_cc.c" >/dev/null'
 
 jobs:
   - job: copr_build
     trigger: release
     owner: repobot
     project: tcp-brutal
+    update_release: false
+    srpm_build_deps: *srpm_deps
+    actions: *source_actions
     targets:
       - fedora-43-s390x
       - fedora-43-x86_64

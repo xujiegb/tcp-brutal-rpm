@@ -1,9 +1,16 @@
 # TCP Brutal RPM packaging
 
 Standalone packaging repository for HyNetworks/tcp-brutal.
-The source RPM is named `tcp-brutal-tools` so that the compiled tool is native
-architecture and the `tcp-brutal` metapackage and `tcp-brutal-dkms` subpackage
-can both be noarch.
+One SPEC produces two independent binary packages: `tcp-brutal` (noarch)
+contains DKMS kernel module sources and `brutalctl` (native architecture)
+contains `/usr/bin/brutalctl`. The source RPM is named `brutalctl`.
+Neither binary package requires the other for installation. To use brutalctl,
+a compatible TCP Brutal 2.x kernel module must already be loaded. The tool
+uses /proc/net/tcp_brutal/rules and the ip command to manage destination-based
+bandwidth rules, shared rate groups and IPv4/IPv6 routes. It is not a DKMS,
+module-loading or software-update utility. The module package replaces the
+previous `tcp-brutal-dkms` package; `brutalctl` replaces the previous
+`tcp-brutal-tools` package. RPM debuginfo packages may also be generated.
 
 ## Supported COPR build targets
 
@@ -33,7 +40,7 @@ packit srpm
 rpmdev-setuptree
 spectool -g -R tcp-brutal.spec
 rpmbuild -bs tcp-brutal.spec
-mock -r fedora-44-x86_64 --rebuild ~/rpmbuild/SRPMS/tcp-brutal-tools-*.src.rpm
+mock -r fedora-44-x86_64 --rebuild ~/rpmbuild/SRPMS/brutalctl-*.src.rpm
 ```
 
 ## Packit service
@@ -45,7 +52,9 @@ Grant Packit builder permission in the COPR project and add
 Enable the required chroots in the COPR project. Pull requests and ordinary commits do not trigger builds.
 
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
-Release for packaging-only changes. Packit fetches exactly that upstream tag.
+Release for packaging-only changes. Packit fetches exactly that upstream tag using the SPEC Version, not the
+packaging repository's release tag. Source preparation checks the archive for
+kernel and management-tool sources and preserves the SPEC Version and Release.
 A release on the original upstream repository does not trigger this independent
 repository. RPM builds have network disabled; source preparation fetches the
 archive beforehand.
@@ -64,11 +73,11 @@ In the Actions tab, select the `main` branch:
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
   Packit listens for the release event and submits the 23 COPR builds.
-  For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
+  For example, RPM version 2.0.1-2 uses the packaging tag `v2.0.1-2`
   and the upstream source tag `v2.0.1`.
 
 The workflow does not overwrite existing releases or tags. To rebuild the same
-release, retry the Packit check or post `/packit build --release v2.0.1-1` on
+release, retry the Packit check or post `/packit build --release v2.0.1-2` on
 the release's commit. Increment Release for packaging changes. Publishing a
 GitHub release does not itself mean the RPM builds have succeeded; check COPR.
 
@@ -110,8 +119,21 @@ sudo dkms autoinstall -k "$(uname -r)"
 sudo modprobe brutal
 dkms status
 modinfo brutal
-sudo brutalctl list
 ```
+
+Install the optional management utility separately (after loading the module):
+
+```sh
+sudo dnf install brutalctl
+sudo brutalctl list
+sudo brutalctl add 203.0.113.5/32 100
+sudo brutalctl del 203.0.113.5/32
+```
+
+The example configures a shared target rate of 100 Mbps for connections to a
+destination; choose a rate appropriate for the path. Rules do not persist
+across reboot. The module also supports applications that configure their own
+sockets, without requiring brutalctl. DNF handles RPM updates and removal.
 
 No global congestion control change is made. Module loading is configured for
 boot via modules-load.d. Upgrading the RPM does not forcibly reload the running
