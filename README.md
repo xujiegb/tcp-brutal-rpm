@@ -4,7 +4,11 @@ Standalone packaging repository for HyNetworks/tcp-brutal.
 One SPEC produces two independent binary packages: `tcp-brutal` (noarch)
 contains DKMS kernel module sources and `brutalctl` (native architecture)
 contains `/usr/bin/brutalctl`. The source RPM is named `brutalctl`.
-Neither binary package requires the other. The module package replaces the
+Neither binary package requires the other for installation. To use brutalctl,
+a compatible TCP Brutal 2.x kernel module must already be loaded. The tool
+uses /proc/net/tcp_brutal/rules and the ip command to manage destination-based
+bandwidth rules, shared rate groups and IPv4/IPv6 routes. It is not a DKMS,
+module-loading or software-update utility. The module package replaces the
 previous `tcp-brutal-dkms` package; `brutalctl` replaces the previous
 `tcp-brutal-tools` package. RPM debuginfo packages may also be generated.
 
@@ -117,12 +121,19 @@ dkms status
 modinfo brutal
 ```
 
-Install the optional management utility separately:
+Install the optional management utility separately (after loading the module):
 
 ```sh
 sudo dnf install brutalctl
 sudo brutalctl list
+sudo brutalctl add 203.0.113.5/32 100
+sudo brutalctl del 203.0.113.5/32
 ```
+
+The example configures a shared target rate of 100 Mbps for connections to a
+destination; choose a rate appropriate for the path. Rules do not persist
+across reboot. The module also supports applications that configure their own
+sockets, without requiring brutalctl. DNF handles RPM updates and removal.
 
 No global congestion control change is made. Module loading is configured for
 boot via modules-load.d. Upgrading the RPM does not forcibly reload the running

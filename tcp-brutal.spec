@@ -5,12 +5,13 @@ Version:        2.0.1
 Release:        2%{?dist}
 %global dkms_version %{version}.%{release}
 %global dkms_src %{_usrsrc}/%{upstream_name}-%{dkms_version}
-Summary:        Userspace management utility for TCP Brutal
+Summary:        TCP Brutal destination rule management utility
 License:        GPL-3.0-only
 URL:            https://github.com/HyNetworks/tcp-brutal
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{upstream_name}-%{version}.tar.gz
 
 BuildRequires:  gcc
+BuildRequires:  glibc-devel
 BuildRequires:  bash
 BuildRequires:  make
 BuildRequires:  systemd-rpm-macros
@@ -21,8 +22,11 @@ Provides:       tcp-brutal-tools = %{version}-%{release}
 Obsoletes:      tcp-brutal-tools < %{version}-%{release}
 
 %description
-brutalctl manages destination rules for the TCP Brutal congestion control
-kernel module. It can be used with an independently installed module.
+brutalctl manages destination-based rate limits and shared bandwidth groups
+through /proc/net/tcp_brutal/rules. It uses iproute to configure IPv4 and IPv6
+routes selecting TCP Brutal and can list, add, delete or flush rules.
+The TCP Brutal 2.x kernel module must be loaded to use these commands.
+The utility does not install, update, load or rebuild the kernel module.
 
 %package -n tcp-brutal
 Summary:        TCP Brutal kernel module source for DKMS
@@ -30,7 +34,7 @@ BuildArch:      noarch
 Provides:       tcp-brutal-dkms = %{version}-%{release}
 Obsoletes:      tcp-brutal-dkms < %{version}-%{release}
 Requires:       dkms
-Requires:       kernel-devel
+Requires:       kernel-devel >= 5.10
 Requires:       gcc
 Requires:       make
 Requires:       elfutils-libelf-devel
@@ -40,9 +44,12 @@ Requires(preun): dkms
 Requires(posttrans): dkms
 
 %description -n tcp-brutal
-Source code for the TCP Brutal congestion control module. DKMS builds it
-against the installed kernel development files and rebuilds it on kernel
-updates. No precompiled kernel module is shipped in this RPM.
+TCP Brutal is a Linux TCP congestion control algorithm supporting application
+socket configuration and destination-based shared bandwidth groups. DKMS
+builds the module against installed kernel development files and rebuilds it
+on kernel updates. Linux 5.10 or later is required. The separate brutalctl
+utility is optional; applications can configure the module directly.
+No precompiled kernel module is shipped in this RPM.
 
 %prep
 %autosetup -n %{upstream_name}-%{version}
@@ -69,6 +76,13 @@ grep -Fx 'PACKAGE_NAME="tcp-brutal"' dkms.conf
 grep -Fx 'PACKAGE_VERSION="%{dkms_version}"' dkms.conf
 grep -Fx 'AUTOINSTALL="yes"' dkms.conf
 test -x tools/brutalctl
+status=0
+tools/brutalctl > brutalctl-usage.txt 2>&1 || status=$?
+test "$status" -eq 2
+grep -F 'brutalctl list' brutalctl-usage.txt
+grep -F 'brutalctl add' brutalctl-usage.txt
+grep -F 'brutalctl del' brutalctl-usage.txt
+grep -F 'brutalctl flush' brutalctl-usage.txt
 
 %post -n tcp-brutal
 if ! dkms add -m '%{upstream_name}' -v '%{dkms_version}' --rpm_safe_upgrade; then
@@ -104,6 +118,7 @@ exit 0
 %changelog
 * Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-2
 - Split tcp-brutal and brutalctl into independent packages.
+- Specify the userspace tool dependencies and validate its command interface.
 - Fix Packit source preparation.
 
 * Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-1
