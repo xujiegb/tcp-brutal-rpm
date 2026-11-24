@@ -1,9 +1,11 @@
 # TCP Brutal RPM packaging
 
 Standalone packaging repository for HyNetworks/tcp-brutal.
-The source RPM is named `tcp-brutal-tools` so that the compiled tool is native
-architecture and the `tcp-brutal` metapackage and `tcp-brutal-dkms` subpackage
-can both be noarch.
+One SPEC produces two independent binary packages: `tcp-brutal` (noarch)
+contains DKMS kernel module sources and `tcp-brutal-tools` (native architecture)
+contains `/usr/bin/brutalctl`. The source RPM is named `tcp-brutal-tools`.
+Neither binary package requires the other. The module package replaces the
+previous `tcp-brutal-dkms` package. RPM debuginfo packages may also be generated.
 
 ## Supported COPR build targets
 
@@ -45,7 +47,9 @@ Grant Packit builder permission in the COPR project and add
 Enable the required chroots in the COPR project. Pull requests and ordinary commits do not trigger builds.
 
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
-Release for packaging-only changes. Packit fetches exactly that upstream tag.
+Release for packaging-only changes. Packit fetches exactly that upstream tag using the SPEC Version, not the
+packaging repository's release tag. Source preparation checks the archive for
+kernel and management-tool sources and preserves the SPEC Version and Release.
 A release on the original upstream repository does not trigger this independent
 repository. RPM builds have network disabled; source preparation fetches the
 archive beforehand.
@@ -64,11 +68,11 @@ In the Actions tab, select the `main` branch:
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
   Packit listens for the release event and submits the 23 COPR builds.
-  For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
+  For example, RPM version 2.0.1-2 uses the packaging tag `v2.0.1-2`
   and the upstream source tag `v2.0.1`.
 
 The workflow does not overwrite existing releases or tags. To rebuild the same
-release, retry the Packit check or post `/packit build --release v2.0.1-1` on
+release, retry the Packit check or post `/packit build --release v2.0.1-2` on
 the release's commit. Increment Release for packaging changes. Publishing a
 GitHub release does not itself mean the RPM builds have succeeded; check COPR.
 
@@ -110,6 +114,12 @@ sudo dkms autoinstall -k "$(uname -r)"
 sudo modprobe brutal
 dkms status
 modinfo brutal
+```
+
+Install the optional management utility separately:
+
+```sh
+sudo dnf install tcp-brutal-tools
 sudo brutalctl list
 ```
 

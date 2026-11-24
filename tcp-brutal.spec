@@ -2,7 +2,7 @@
 
 Name:           tcp-brutal-tools
 Version:        2.0.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 %global dkms_version %{version}.%{release}
 %global dkms_src %{_usrsrc}/%{upstream_name}-%{dkms_version}
 Summary:        Userspace management utility for TCP Brutal
@@ -23,17 +23,10 @@ brutalctl manages destination rules for the TCP Brutal congestion control
 kernel module. It can be used with an independently installed module.
 
 %package -n tcp-brutal
-Summary:        TCP Brutal congestion control (complete installation)
-BuildArch:      noarch
-Requires:       tcp-brutal-dkms = %{version}-%{release}
-Requires:       tcp-brutal-tools = %{version}-%{release}
-
-%description -n tcp-brutal
-Installs the TCP Brutal DKMS kernel module and the brutalctl management tool.
-
-%package -n tcp-brutal-dkms
 Summary:        TCP Brutal kernel module source for DKMS
 BuildArch:      noarch
+Provides:       tcp-brutal-dkms = %{version}-%{release}
+Obsoletes:      tcp-brutal-dkms < %{version}-%{release}
 Requires:       dkms
 Requires:       kernel-devel
 Requires:       gcc
@@ -44,13 +37,15 @@ Requires(post): dkms
 Requires(preun): dkms
 Requires(posttrans): dkms
 
-%description -n tcp-brutal-dkms
+%description -n tcp-brutal
 Source code for the TCP Brutal congestion control module. DKMS builds it
 against the installed kernel development files and rebuilds it on kernel
 updates. No precompiled kernel module is shipped in this RPM.
 
 %prep
 %autosetup -n %{upstream_name}-%{version}
+test -f brutal_cc.c
+test -f tools/brutalctl.c
 
 %build
 %{__cc} %{build_cflags} -std=c99 -Wall -Wextra -o tools/brutalctl \
@@ -59,10 +54,9 @@ PACKAGE_VERSION='%{dkms_version}' bash scripts/mkdkmsconf.sh > dkms.conf
 
 %install
 install -Dpm 0755 tools/brutalctl %{buildroot}%{_bindir}/brutalctl
-install -d %{buildroot}%{dkms_src}/tools
+install -d %{buildroot}%{dkms_src}
 install -pm 0644 dkms.conf Makefile brutal.h brutal_cc.c brutal_rules.c \
     brutal_sockopt.c .clang-format %{buildroot}%{dkms_src}/
-install -pm 0644 tools/Makefile tools/brutalctl.c %{buildroot}%{dkms_src}/tools/
 install -Dpm 0755 scripts/mkdkmsconf.sh %{buildroot}%{dkms_src}/scripts/mkdkmsconf.sh
 install -d %{buildroot}%{_modulesloaddir}
 printf 'brutal\n' > %{buildroot}%{_modulesloaddir}/tcp-brutal.conf
@@ -74,17 +68,17 @@ grep -Fx 'PACKAGE_VERSION="%{dkms_version}"' dkms.conf
 grep -Fx 'AUTOINSTALL="yes"' dkms.conf
 test -x tools/brutalctl
 
-%post -n tcp-brutal-dkms
+%post -n tcp-brutal
 if ! dkms add -m '%{upstream_name}' -v '%{dkms_version}' --rpm_safe_upgrade; then
     echo 'Warning: TCP Brutal DKMS registration failed; inspect dkms status.' >&2
 fi
 
-%preun -n tcp-brutal-dkms
+%preun -n tcp-brutal
 if ! dkms remove -m '%{upstream_name}' -v '%{dkms_version}' --all --rpm_safe_upgrade; then
     echo 'Warning: TCP Brutal DKMS removal failed; inspect dkms status.' >&2
 fi
 
-%posttrans -n tcp-brutal-dkms
+%posttrans -n tcp-brutal
 for module_dir in /usr/lib/modules/*; do
     [ -f "$module_dir/build/Makefile" ] || continue
     kernel=${module_dir##*/}
@@ -101,12 +95,13 @@ exit 0
 
 %files -n tcp-brutal
 %license LICENSE
-
-%files -n tcp-brutal-dkms
-%license LICENSE
+%doc README.md README.zh.md
 %{dkms_src}/
 %{_modulesloaddir}/tcp-brutal.conf
 
 %changelog
+* Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-2
+- Split the kernel module and management utility and fix Packit source preparation.
+
 * Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-1
 - Initial COPR packaging for TCP Brutal 2.0.1.
