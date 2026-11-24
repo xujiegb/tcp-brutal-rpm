@@ -1,6 +1,6 @@
 specfile_path: tcp-brutal.spec
 upstream_package_name: tcp-brutal
-downstream_package_name: brutalctl
+downstream_package_name: tcp-brutal
 update_release: false
 use_copr_dist_git_build: false
 
