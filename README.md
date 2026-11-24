@@ -7,17 +7,21 @@ can both be noarch.
 
 ## Supported COPR build targets
 
-Both pull requests and published releases build the same 14 targets:
+Only published releases trigger builds across these 23 targets:
 
 | Distribution | x86_64 | aarch64 | ppc64le | s390x | riscv64 |
 |---|---|---|---|---|---|
+| Fedora 43 | Yes | Yes | Yes | Yes | Yes |
 | Fedora 44 | Yes | Yes | Yes | Yes | Yes |
 | Fedora 45 | Yes | Yes | Yes | Yes | Yes |
-| RHEL 10 + EPEL | Yes | Yes | Yes | Yes | Not available |
+| RHEL 10 | Yes | Yes | Yes | Yes | Not available |
+| EPEL 10 | Yes | Yes | Yes | Yes | Not available |
 
-RHEL uses `rhel+epel-10-*`, not `epel-10-*` (CentOS Stream-based).
-RHEL 10 RISC-V is a developer preview; no matching public COPR chroot has
-been confirmed. Fedora RISC-V uses the alternative architecture repositories.
+RHEL uses the pure `rhel-10-*` chroots; EPEL uses separate `epel-10-*`
+chroots (CentOS Stream-based). No combined RHEL and EPEL chroot is selected.
+DKMS is a runtime dependency, not a build dependency. On RHEL, install it
+from EPEL at deployment time. RHEL 10 and EPEL 10 do not have confirmed
+riscv64 chroots; Fedora RISC-V uses the alternative architecture repositories.
 The matrix is fixed: no Rawhide or moving Fedora aliases are selected.
 Check current builder availability with `copr-cli list-chroots`.
 
@@ -38,7 +42,7 @@ Install the Packit GitHub App on this repository. Published releases build in
 [repobot/tcp-brutal](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/).
 Grant Packit builder permission in the COPR project and add
 `github.com/xujiegb/tcp-brutal-rpm` to its Packit allowed forge projects setting.
-Enable the required chroots in the COPR project. Pull request builds remain isolated.
+Enable the required chroots in the COPR project. Pull requests and ordinary commits do not trigger builds.
 
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
 Release for packaging-only changes. Packit fetches exactly that upstream tag.
@@ -59,7 +63,7 @@ In the Actions tab, select the `main` branch:
   awk, and commits only the SPEC to main. It does not publish a release.
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
-  Packit listens for the release event and submits the 14 COPR builds.
+  Packit listens for the release event and submits the 23 COPR builds.
   For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
   and the upstream source tag `v2.0.1`.
 
@@ -85,12 +89,18 @@ sudo dnf install dnf-plugins-core
 For RHEL, explicitly select the matching chroot when enabling COPR:
 
 ```sh
-sudo dnf copr enable repobot/tcp-brutal "rhel+epel-10-$(arch)"
+sudo dnf copr enable repobot/tcp-brutal "rhel-10-$(arch)"
+```
+
+For EPEL 10, select its separate chroot:
+
+```sh
+sudo dnf copr enable repobot/tcp-brutal "epel-10-$(arch)"
 ```
 
 For Fedora, the default COPR repository selection is normally sufficient.
 Run the common installation and verification steps below (skip the first line
-if the correct RHEL COPR repository has already been enabled).
+if the correct RHEL or EPEL COPR repository has already been enabled).
 
 ```sh
 sudo dnf copr enable repobot/tcp-brutal

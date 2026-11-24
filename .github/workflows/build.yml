@@ -42,5 +42,5 @@ jobs:
           else
             gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$sha" >/dev/null
           fi
-          url=$(gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "TCP Brutal $version-$release" --notes "Build TCP Brutal $version-$release for Fedora and RHEL in COPR.")
+          url=$(gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "TCP Brutal $version-$release" --notes "Build TCP Brutal $version-$release for Fedora, RHEL and EPEL in COPR.")
           printf 'Published release: %s\n\n[COPR builds](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/builds/)\n' "$url" >> "$GITHUB_STEP_SUMMARY"
