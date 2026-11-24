@@ -1,0 +1,73 @@
+# For an independent packaging repository, not a fork carrying upstream sources.
+specfile_path: tcp-brutal.spec
+upstream_package_name: tcp-brutal
+downstream_package_name: tcp-brutal-tools
+upstream_project_url: https://github.com/HyNetworks/tcp-brutal
+upstream_tag_template: v{version}
+update_release: false
+
+srpm_build_deps:
+  - curl
+  - rpm-build
+  - systemd-rpm-macros
+
+# Use the pinned upstream tarball, not a git archive of the packaging repo.
+actions:
+  get-current-version:
+    - "rpmspec -q --srpm --qf '%{version}\\n' tcp-brutal.spec"
+  create-archive:
+    - >-
+      bash -eu -c 'version=$(rpmspec -q --srpm --qf "%{version}" tcp-brutal.spec);
+      archive="tcp-brutal-${version}.tar.gz";
+      curl --fail --silent --show-error --location --retry 3
+      --output "$archive"
+      "https://github.com/HyNetworks/tcp-brutal/archive/refs/tags/v${version}.tar.gz";
+      printf "%s\n" "$archive"'
+  # Source0, prep directory, Version and Release are already set in the spec.
+  fix-spec-file:
+    - /usr/bin/true
+
+jobs:
+  # Isolated COPR project for each pull request.
+  - job: copr_build
+    trigger: pull_request
+    targets:
+      - fedora-44-s390x
+      - fedora-44-x86_64
+      - fedora-44-ppc64le
+      - fedora-44-aarch64
+      - fedora-44-riscv64
+      - fedora-45-s390x
+      - fedora-45-x86_64
+      - fedora-45-ppc64le
+      - fedora-45-aarch64
+      - fedora-45-riscv64
+      - rhel+epel-10-s390x
+      - rhel+epel-10-x86_64
+      - rhel+epel-10-ppc64le
+      - rhel+epel-10-aarch64
+    enable_net: false
+
+  # Persistent builds from the packaging repo's default branch.
+  - job: copr_build
+    trigger: commit
+    # To publish in your own project, uncomment and replace the owner:
+    # owner: YOUR_COPR_USERNAME
+    # project: tcp-brutal
+    preserve_project: true
+    targets:
+      - fedora-44-s390x
+      - fedora-44-x86_64
+      - fedora-44-ppc64le
+      - fedora-44-aarch64
+      - fedora-44-riscv64
+      - fedora-45-s390x
+      - fedora-45-x86_64
+      - fedora-45-ppc64le
+      - fedora-45-aarch64
+      - fedora-45-riscv64
+      - rhel+epel-10-s390x
+      - rhel+epel-10-x86_64
+      - rhel+epel-10-ppc64le
+      - rhel+epel-10-aarch64
+    enable_net: false
