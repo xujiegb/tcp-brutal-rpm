@@ -2,7 +2,7 @@
 
 Name:           brutalctl
 Version:        2.0.1
-Release:        3%{?dist}
+Release:        1%{?dist}
 %global dkms_version %{version}.%{release}
 %global dkms_src %{_usrsrc}/%{upstream_name}-%{dkms_version}
 Summary:        TCP Brutal destination rule management utility
@@ -116,5 +116,5 @@ exit 0
 %{_modulesloaddir}/tcp-brutal.conf
 
 %changelog
-* Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-3
+* Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-1
 - Update TCP Brutal.

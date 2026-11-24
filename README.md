@@ -75,11 +75,11 @@ In the Actions tab, select the `main` branch:
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
   Packit listens for the release event and submits the 23 COPR builds.
-  For example, RPM version 2.0.1-3 uses the packaging tag `v2.0.1-3`
+  For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
   and the upstream source tag `v2.0.1`.
 
 The workflow does not overwrite existing releases or tags. To rebuild the same
-release, retry the Packit check or post `/packit build --release v2.0.1-3` on
+release, retry the Packit check or post `/packit build --release v2.0.1-1` on
 the release's commit. Increment Release for packaging changes. Publishing a
 GitHub release does not itself mean the RPM builds have succeeded; check COPR.
 
