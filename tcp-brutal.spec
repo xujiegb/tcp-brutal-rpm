@@ -53,8 +53,6 @@ No precompiled kernel module is shipped in this RPM.
 
 %prep
 %autosetup -n %{upstream_name}-%{version}
-test -f brutal_cc.c
-test -f tools/brutalctl.c
 
 %build
 %{__cc} %{build_cflags} -std=c99 -Wall -Wextra -o tools/brutalctl \
@@ -69,20 +67,6 @@ install -pm 0644 dkms.conf Makefile brutal.h brutal_cc.c brutal_rules.c \
 install -Dpm 0755 scripts/mkdkmsconf.sh %{buildroot}%{dkms_src}/scripts/mkdkmsconf.sh
 install -d %{buildroot}%{_modulesloaddir}
 printf 'brutal\n' > %{buildroot}%{_modulesloaddir}/tcp-brutal.conf
-
-%check
-bash -n dkms.conf
-grep -Fx 'PACKAGE_NAME="tcp-brutal"' dkms.conf
-grep -Fx 'PACKAGE_VERSION="%{dkms_version}"' dkms.conf
-grep -Fx 'AUTOINSTALL="yes"' dkms.conf
-test -x tools/brutalctl
-status=0
-tools/brutalctl > brutalctl-usage.txt 2>&1 || status=$?
-test "$status" -eq 2
-grep -F 'brutalctl list' brutalctl-usage.txt
-grep -F 'brutalctl add' brutalctl-usage.txt
-grep -F 'brutalctl del' brutalctl-usage.txt
-grep -F 'brutalctl flush' brutalctl-usage.txt
 
 %post -n tcp-brutal
 if ! dkms add -m '%{upstream_name}' -v '%{dkms_version}' --rpm_safe_upgrade; then

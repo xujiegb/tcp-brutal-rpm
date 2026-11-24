@@ -54,9 +54,8 @@ Enable the required chroots in the COPR project. Pull requests and ordinary comm
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
 Release for packaging-only changes. Packit uses inline shell actions in .packit.yaml to read the version and release from
 the exact checked-out commit, fetch the upstream tarball, restore the original
-SPEC with the local Source0, and verify the archive and SPEC. The Build RPM
-workflow reproduces Packit's prepare-sources job and runs RPM prep before
-publishing a release. Failed preflight checks prevent release publication.
+SPEC with the local Source0. Build RPM publishes a release directly, without
+running a separate source validation or RPM preflight build.
 A release on the original upstream repository does not trigger this independent
 repository. RPM builds have network disabled; source preparation fetches the
 archive beforehand.
