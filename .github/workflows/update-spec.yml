@@ -71,12 +71,8 @@ jobs:
           fi
           sed -i -E "s/^(Version:[[:blank:]]*).*/\1$version/; s/^(Release:[[:blank:]]*).*/\1$release%{?dist}/" "$spec"
           stamp=$(date -u '+%a %b %d %Y')
-          awk -v stamp="$stamp" -v nvr="$new" '
-            { print }
-            /^%changelog$/ {
-              printf "* %s TCP Brutal RPM maintainers <packaging@example.invalid> - %s\n- Update package to %s.\n\n", stamp, nvr, nvr
-            }
-          ' "$spec" > "$workdir/updated.spec"
-          content=$(base64 -w0 "$workdir/updated.spec")
+          sed -i '/^%changelog$/,$d' "$spec"
+          printf '%%changelog\n* %s TCP Brutal RPM maintainers <packaging@example.invalid> - %s\n- Update TCP Brutal.\n' "$stamp" "$new" >> "$spec"
+          content=$(base64 -w0 "$spec")
           url=$(gh api --method PUT "$endpoint" -f message="Update TCP Brutal to $new" -f content="$content" -f sha="$sha" -f branch=main --jq .commit.html_url)
           printf 'Updated SPEC to %s: %s\n\nRun Build RPM to publish the release and trigger Packit.\n' "$new" "$url" >> "$GITHUB_STEP_SUMMARY"
