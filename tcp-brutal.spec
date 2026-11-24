@@ -117,9 +117,4 @@ exit 0
 
 %changelog
 * Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-2
-- Split tcp-brutal and brutalctl into independent packages.
-- Specify the userspace tool dependencies and validate its command interface.
-- Fix Packit source preparation.
-
-* Tue Nov 24 2026 TCP Brutal RPM maintainers <packaging@example.invalid> - 2.0.1-1
-- Initial COPR packaging for TCP Brutal 2.0.1.
+- Update TCP Brutal.

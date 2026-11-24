@@ -68,8 +68,8 @@ allow the workflow to write commits, tags and releases.
 In the Actions tab, select the `main` branch:
 
 - **Update SPEC Version**: enters an upstream version and RPM release, verifies
-  the upstream tag, updates Version, Release and changelog using Bash, sed and
-  awk, and commits only the SPEC to main. It does not publish a release.
+  the upstream tag, updates Version and Release using Bash and sed, replaces the single changelog
+  entry instead of appending history, and commits only the SPEC to main. It does not publish a release.
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
   Packit listens for the release event and submits the 23 COPR builds.
