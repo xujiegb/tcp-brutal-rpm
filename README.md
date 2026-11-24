@@ -52,7 +52,7 @@ Grant Packit builder permission in the COPR project and add
 Enable the required chroots in the COPR project. Pull requests and ordinary commits do not trigger builds.
 
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
-Release for packaging-only changes. Packit invokes packaging/prepare-source.sh to read the version and release from
+Release for packaging-only changes. Packit uses inline shell actions in .packit.yaml to read the version and release from
 the exact checked-out commit, fetch the upstream tarball, restore the original
 SPEC with the local Source0, and verify the archive and SPEC. The Build RPM
 workflow reproduces Packit's prepare-sources job and runs RPM prep before
