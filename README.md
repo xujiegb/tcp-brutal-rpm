@@ -7,10 +7,11 @@ can both be noarch.
 
 ## Supported COPR build targets
 
-Only published releases trigger builds across these 18 targets:
+Only published releases trigger builds across these 23 targets:
 
 | Distribution | x86_64 | aarch64 | ppc64le | s390x | riscv64 |
 |---|---|---|---|---|---|
+| Fedora 43 | Yes | Yes | Yes | Yes | Yes |
 | Fedora 44 | Yes | Yes | Yes | Yes | Yes |
 | Fedora 45 | Yes | Yes | Yes | Yes | Yes |
 | RHEL 10 | Yes | Yes | Yes | Yes | Not available |
@@ -62,7 +63,7 @@ In the Actions tab, select the `main` branch:
   awk, and commits only the SPEC to main. It does not publish a release.
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
-  Packit listens for the release event and submits the 18 COPR builds.
+  Packit listens for the release event and submits the 23 COPR builds.
   For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
   and the upstream source tag `v2.0.1`.
 
