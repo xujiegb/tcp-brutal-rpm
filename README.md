@@ -52,9 +52,10 @@ Grant Packit builder permission in the COPR project and add
 Enable the required chroots in the COPR project. Pull requests and ordinary commits do not trigger builds.
 
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
-Release for packaging-only changes. Packit fetches exactly that upstream tag using the SPEC Version, not the
-packaging repository's release tag. Source preparation checks the archive for
-kernel and management-tool sources and preserves the SPEC Version and Release.
+Release for packaging-only changes. Packit uses inline shell actions in .packit.yaml to read the version and release from
+the exact checked-out commit, fetch the upstream tarball, restore the original
+SPEC with the local Source0. Build RPM publishes a release directly, without
+running a separate source validation or RPM preflight build.
 A release on the original upstream repository does not trigger this independent
 repository. RPM builds have network disabled; source preparation fetches the
 archive beforehand.
@@ -73,11 +74,11 @@ In the Actions tab, select the `main` branch:
 - **Build RPM**: reads the current SPEC from main and publishes a GitHub release
   named `v<version>-<release>`, pointing to the exact packaging commit.
   Packit listens for the release event and submits the 23 COPR builds.
-  For example, RPM version 2.0.1-2 uses the packaging tag `v2.0.1-2`
+  For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
   and the upstream source tag `v2.0.1`.
 
 The workflow does not overwrite existing releases or tags. To rebuild the same
-release, retry the Packit check or post `/packit build --release v2.0.1-2` on
+release, retry the Packit check or post `/packit build --release v2.0.1-1` on
 the release's commit. Increment Release for packaging changes. Publishing a
 GitHub release does not itself mean the RPM builds have succeeded; check COPR.
 
