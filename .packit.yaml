@@ -26,28 +26,7 @@ actions:
 
 jobs:
   - job: copr_build
-    trigger: pull_request
-    identifier: pr
-    targets:
-      - fedora-44-s390x
-      - fedora-44-x86_64
-      - fedora-44-ppc64le
-      - fedora-44-aarch64
-      - fedora-44-riscv64
-      - fedora-45-s390x
-      - fedora-45-x86_64
-      - fedora-45-ppc64le
-      - fedora-45-aarch64
-      - fedora-45-riscv64
-      - rhel+epel-10-s390x
-      - rhel+epel-10-x86_64
-      - rhel+epel-10-ppc64le
-      - rhel+epel-10-aarch64
-    enable_net: false
-
-  - job: copr_build
     trigger: release
-    identifier: release
     owner: repobot
     project: tcp-brutal
     targets:
@@ -61,8 +40,12 @@ jobs:
       - fedora-45-ppc64le
       - fedora-45-aarch64
       - fedora-45-riscv64
-      - rhel+epel-10-s390x
-      - rhel+epel-10-x86_64
-      - rhel+epel-10-ppc64le
-      - rhel+epel-10-aarch64
+      - rhel-10-s390x
+      - rhel-10-x86_64
+      - rhel-10-ppc64le
+      - rhel-10-aarch64
+      - epel-10-s390x
+      - epel-10-x86_64
+      - epel-10-ppc64le
+      - epel-10-aarch64
     enable_net: false
