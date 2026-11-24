@@ -1,13 +1,13 @@
 # TCP Brutal RPM packaging
 
-Standalone packaging repository for HyNetworks/tcp-brutal v2.0.1.
+Standalone packaging repository for HyNetworks/tcp-brutal.
 The source RPM is named `tcp-brutal-tools` so that the compiled tool is native
 architecture and the `tcp-brutal` metapackage and `tcp-brutal-dkms` subpackage
 can both be noarch.
 
 ## Supported COPR build targets
 
-Both pull requests and default-branch commits build the same 14 targets:
+Both pull requests and published releases build the same 14 targets:
 
 | Distribution | x86_64 | aarch64 | ppc64le | s390x | riscv64 |
 |---|---|---|---|---|---|
@@ -34,7 +34,7 @@ mock -r fedora-44-x86_64 --rebuild ~/rpmbuild/SRPMS/tcp-brutal-tools-*.src.rpm
 
 ## Packit service
 
-Install the Packit GitHub App on this repository. Commits to `main` build in
+Install the Packit GitHub App on this repository. Published releases build in
 [repobot/tcp-brutal](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/).
 Grant Packit builder permission in the COPR project and add
 `github.com/xujiegb/tcp-brutal-rpm` to its Packit allowed forge projects setting.
@@ -48,22 +48,29 @@ archive beforehand.
 
 ## Manual GitHub Actions
 
-Create a repository secret named `PACKIT_TOKEN` with a fine-grained GitHub
-personal access token for this repository, granting Contents read/write.
-The token's user must have write access and permission to update `main`.
-Do not use the default Actions token for the Packit request.
+Both workflows use the built-in GitHub Actions token with `contents: write`.
+No additional repository secret is required. Repository and branch rules must
+allow the workflow to write commits, tags and releases.
 
-In the Actions tab, select the `main` branch and run either workflow:
+In the Actions tab, select the `main` branch:
 
-- **Build RPM**: posts the official Packit build command on the current main
-  commit. It requests a build in the existing COPR project without changing the SPEC.
-- **Update SPEC Version**: accepts an upstream tag version and a positive RPM
-  release number, verifies the upstream tag, updates Version, Release and
-  changelog, and commits the SPEC to main. Packit then builds on the push.
-  Unchanged versions are skipped and downgrades are rejected.
+- **Update SPEC Version**: enters an upstream version and RPM release, verifies
+  the upstream tag, updates Version, Release and changelog using Bash, sed and
+  awk, and commits only the SPEC to main. It does not publish a release.
+- **Build RPM**: reads the current SPEC from main and publishes a GitHub release
+  named `v<version>-<release>`, pointing to the exact packaging commit.
+  Packit listens for the release event and submits the 14 COPR builds.
+  For example, RPM version 2.0.1-1 uses the packaging tag `v2.0.1-1`
+  and the upstream source tag `v2.0.1`.
 
-The workflows submit a request or commit; COPR reports the actual build
-result. GitHub Actions does not perform the 14 architecture builds itself.
+The workflow does not overwrite existing releases or tags. To rebuild the same
+release, retry the Packit check or post `/packit build --release v2.0.1-1` on
+the release's commit. Increment Release for packaging changes. Publishing a
+GitHub release does not itself mean the RPM builds have succeeded; check COPR.
+
+A release can also be published manually in GitHub using a tag pointing to a
+commit containing the release-trigger configuration. Ordinary main-branch
+commits do not publish RPMs to the official COPR project.
 
 ## Install and verify on Fedora or RHEL 10
 

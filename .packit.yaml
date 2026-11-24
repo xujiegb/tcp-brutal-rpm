@@ -27,6 +27,7 @@ actions:
 jobs:
   - job: copr_build
     trigger: pull_request
+    identifier: pr
     targets:
       - fedora-44-s390x
       - fedora-44-x86_64
@@ -45,8 +46,8 @@ jobs:
     enable_net: false
 
   - job: copr_build
-    trigger: commit
-    branch: main
+    trigger: release
+    identifier: release
     owner: repobot
     project: tcp-brutal
     targets:
