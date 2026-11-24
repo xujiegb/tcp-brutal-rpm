@@ -1,0 +1,31 @@
+name: Build RPM
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: tcp-brutal-manual-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.PACKIT_TOKEN }}
+    steps:
+      - name: Trigger Packit build
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::Configure the PACKIT_TOKEN repository secret."
+            exit 1
+          fi
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          url=$(gh api --method POST "repos/$GITHUB_REPOSITORY/commits/$sha/comments" -f body='/packit build --commit main' --jq .html_url)
+          printf 'Packit request: %s\n' "$url" >> "$GITHUB_STEP_SUMMARY"
+          printf '\n[COPR builds](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/builds/)\n' >> "$GITHUB_STEP_SUMMARY"
