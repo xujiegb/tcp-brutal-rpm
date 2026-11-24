@@ -26,7 +26,6 @@ Check current builder availability with `copr-cli list-chroots`.
 ```sh
 sudo dnf install rpm-build rpmdevtools packit mock
 packit srpm
-# Or without Packit:
 rpmdev-setuptree
 spectool -g -R tcp-brutal.spec
 rpmbuild -bs tcp-brutal.spec
@@ -35,11 +34,11 @@ mock -r fedora-44-x86_64 --rebuild ~/rpmbuild/SRPMS/tcp-brutal-tools-*.src.rpm
 
 ## Packit service
 
-Install the Packit GitHub App on this repository and open a PR. The default
-branch commit job is persistent. For a custom COPR project, create it,
-grant Packit permission, and add this GitHub repository in the project's
-Packit allowed forge projects setting. Uncomment and replace the owner/project
-fields in the commit job. The PR job remains isolated.
+Install the Packit GitHub App on this repository. Commits to `main` build in
+[repobot/tcp-brutal](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/).
+Grant Packit builder permission in the COPR project and add
+`github.com/xujiegb/tcp-brutal-rpm` to its Packit allowed forge projects setting.
+Enable the required chroots in the COPR project. Pull request builds remain isolated.
 
 To update upstream, edit Version and reset Release to 1 in the spec; use a new
 Release for packaging-only changes. Packit fetches exactly that upstream tag.
@@ -60,7 +59,7 @@ sudo dnf install dnf-plugins-core
 For RHEL, explicitly select the matching chroot when enabling COPR:
 
 ```sh
-sudo dnf copr enable YOUR_COPR_USERNAME/tcp-brutal "rhel+epel-10-$(arch)"
+sudo dnf copr enable repobot/tcp-brutal "rhel+epel-10-$(arch)"
 ```
 
 For Fedora, the default COPR repository selection is normally sufficient.
@@ -68,7 +67,7 @@ Run the common installation and verification steps below (skip the first line
 if the correct RHEL COPR repository has already been enabled).
 
 ```sh
-sudo dnf copr enable YOUR_COPR_USERNAME/tcp-brutal
+sudo dnf copr enable repobot/tcp-brutal
 sudo dnf install tcp-brutal
 sudo dnf install "kernel-devel-$(uname -r)"
 sudo dkms autoinstall -k "$(uname -r)"

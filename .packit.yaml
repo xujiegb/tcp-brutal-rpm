@@ -46,7 +46,9 @@ jobs:
 
   - job: copr_build
     trigger: commit
-    preserve_project: true
+    branch: main
+    owner: repobot
+    project: tcp-brutal
     targets:
       - fedora-44-s390x
       - fedora-44-x86_64
