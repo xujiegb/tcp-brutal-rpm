@@ -1,0 +1,67 @@
+specfile_path: tcp-brutal.spec
+upstream_package_name: tcp-brutal
+downstream_package_name: tcp-brutal-tools
+upstream_project_url: https://github.com/HyNetworks/tcp-brutal
+upstream_tag_template: v{version}
+update_release: false
+
+srpm_build_deps:
+  - curl
+  - rpm-build
+  - systemd-rpm-macros
+
+actions:
+  get-current-version:
+    - "rpmspec -q --srpm --qf '%{version}\\n' tcp-brutal.spec"
+  create-archive:
+    - >-
+      bash -eu -c 'version=$(rpmspec -q --srpm --qf "%{version}" tcp-brutal.spec);
+      archive="tcp-brutal-${version}.tar.gz";
+      curl --fail --silent --show-error --location --retry 3
+      --output "$archive"
+      "https://github.com/HyNetworks/tcp-brutal/archive/refs/tags/v${version}.tar.gz";
+      printf "%s\n" "$archive"'
+  fix-spec-file:
+    - /usr/bin/true
+
+jobs:
+  - job: copr_build
+    trigger: pull_request
+    targets:
+      - fedora-44-s390x
+      - fedora-44-x86_64
+      - fedora-44-ppc64le
+      - fedora-44-aarch64
+      - fedora-44-riscv64
+      - fedora-45-s390x
+      - fedora-45-x86_64
+      - fedora-45-ppc64le
+      - fedora-45-aarch64
+      - fedora-45-riscv64
+      - rhel+epel-10-s390x
+      - rhel+epel-10-x86_64
+      - rhel+epel-10-ppc64le
+      - rhel+epel-10-aarch64
+    enable_net: false
+
+  - job: copr_build
+    trigger: commit
+    branch: main
+    owner: repobot
+    project: tcp-brutal
+    targets:
+      - fedora-44-s390x
+      - fedora-44-x86_64
+      - fedora-44-ppc64le
+      - fedora-44-aarch64
+      - fedora-44-riscv64
+      - fedora-45-s390x
+      - fedora-45-x86_64
+      - fedora-45-ppc64le
+      - fedora-45-aarch64
+      - fedora-45-riscv64
+      - rhel+epel-10-s390x
+      - rhel+epel-10-x86_64
+      - rhel+epel-10-ppc64le
+      - rhel+epel-10-aarch64
+    enable_net: false
