@@ -3,10 +3,11 @@ name: Build RPM
 on:
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: write
 
 concurrency:
-  group: tcp-brutal-manual-build
+  group: tcp-brutal-release
   cancel-in-progress: false
 
 jobs:
@@ -15,17 +16,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      GH_TOKEN: ${{ secrets.PACKIT_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Trigger Packit build
+      - name: Publish build release
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$GH_TOKEN" ]]; then
-            echo "::error::Configure the PACKIT_TOKEN repository secret."
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          spec=$(gh api "repos/$GITHUB_REPOSITORY/contents/tcp-brutal.spec?ref=$sha" --jq .content | base64 -d)
+          version=$(sed -nE 's/^Version:[[:blank:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:blank:]]*$/\1/p' <<< "$spec")
+          release=$(sed -nE 's/^Release:[[:blank:]]+([1-9][0-9]*)%\{\?dist\}[[:blank:]]*$/\1/p' <<< "$spec")
+          [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$release" =~ ^[1-9][0-9]*$ ]]
+          tag="v$version-$release"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $tag already exists. Retry its Packit check or increment the RPM release."
             exit 1
           fi
-          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
-          url=$(gh api --method POST "repos/$GITHUB_REPOSITORY/commits/$sha/comments" -f body='/packit build --commit main' --jq .html_url)
-          printf 'Packit request: %s\n' "$url" >> "$GITHUB_STEP_SUMMARY"
-          printf '\n[COPR builds](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/builds/)\n' >> "$GITHUB_STEP_SUMMARY"
+          ref=$(git ls-remote --refs "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/tags/$tag")
+          if [[ -n "$ref" ]]; then
+            if [[ "$ref" != "$sha"$'\t'"refs/tags/$tag" ]]; then
+              echo "::error::Tag $tag already points to another commit."
+              exit 1
+            fi
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$sha" >/dev/null
+          fi
+          url=$(gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --title "TCP Brutal $version-$release" --notes "Build TCP Brutal $version-$release for Fedora and RHEL in COPR.")
+          printf 'Published release: %s\n\n[COPR builds](https://copr.fedorainfracloud.org/coprs/repobot/tcp-brutal/builds/)\n' "$url" >> "$GITHUB_STEP_SUMMARY"
