@@ -1,4 +1,3 @@
-# For an independent packaging repository, not a fork carrying upstream sources.
 specfile_path: tcp-brutal.spec
 upstream_package_name: tcp-brutal
 downstream_package_name: tcp-brutal-tools
@@ -11,7 +10,6 @@ srpm_build_deps:
   - rpm-build
   - systemd-rpm-macros
 
-# Use the pinned upstream tarball, not a git archive of the packaging repo.
 actions:
   get-current-version:
     - "rpmspec -q --srpm --qf '%{version}\\n' tcp-brutal.spec"
@@ -23,12 +21,10 @@ actions:
       --output "$archive"
       "https://github.com/HyNetworks/tcp-brutal/archive/refs/tags/v${version}.tar.gz";
       printf "%s\n" "$archive"'
-  # Source0, prep directory, Version and Release are already set in the spec.
   fix-spec-file:
     - /usr/bin/true
 
 jobs:
-  # Isolated COPR project for each pull request.
   - job: copr_build
     trigger: pull_request
     targets:
@@ -48,12 +44,8 @@ jobs:
       - rhel+epel-10-aarch64
     enable_net: false
 
-  # Persistent builds from the packaging repo's default branch.
   - job: copr_build
     trigger: commit
-    # To publish in your own project, uncomment and replace the owner:
-    # owner: YOUR_COPR_USERNAME
-    # project: tcp-brutal
     preserve_project: true
     targets:
       - fedora-44-s390x

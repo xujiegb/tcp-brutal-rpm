@@ -3,7 +3,6 @@
 Name:           tcp-brutal-tools
 Version:        2.0.1
 Release:        1%{?dist}
-# Include the RPM release so packaging-only changes also rebuild the module.
 %global dkms_version %{version}.%{release}
 %global dkms_src %{_usrsrc}/%{upstream_name}-%{dkms_version}
 Summary:        Userspace management utility for TCP Brutal
@@ -44,8 +43,6 @@ Requires:       kmod
 Requires(post): dkms
 Requires(preun): dkms
 Requires(posttrans): dkms
-# Optional for custom kernels built with Clang:
-# install clang, lld and llvm before building for those kernels.
 
 %description -n tcp-brutal-dkms
 Source code for the TCP Brutal congestion control module. DKMS builds it
@@ -56,7 +53,6 @@ updates. No precompiled kernel module is shipped in this RPM.
 %autosetup -n %{upstream_name}-%{version}
 
 %build
-# The upstream tools/Makefile does not use LDFLAGS; pass both Fedora flag sets.
 %{__cc} %{build_cflags} -std=c99 -Wall -Wextra -o tools/brutalctl \
     tools/brutalctl.c %{build_ldflags}
 PACKAGE_VERSION='%{dkms_version}' bash scripts/mkdkmsconf.sh > dkms.conf
@@ -67,7 +63,6 @@ install -d %{buildroot}%{dkms_src}/tools
 install -pm 0644 dkms.conf Makefile brutal.h brutal_cc.c brutal_rules.c \
     brutal_sockopt.c .clang-format %{buildroot}%{dkms_src}/
 install -pm 0644 tools/Makefile tools/brutalctl.c %{buildroot}%{dkms_src}/tools/
-# Retain the upstream generator so the DKMS make targets remain functional.
 install -Dpm 0755 scripts/mkdkmsconf.sh %{buildroot}%{dkms_src}/scripts/mkdkmsconf.sh
 install -d %{buildroot}%{_modulesloaddir}
 printf 'brutal\n' > %{buildroot}%{_modulesloaddir}/tcp-brutal.conf
@@ -85,15 +80,11 @@ if ! dkms add -m '%{upstream_name}' -v '%{dkms_version}' --rpm_safe_upgrade; the
 fi
 
 %preun -n tcp-brutal-dkms
-# Remove this exact RPM's DKMS version, including on upgrade.
-# Do not unload a live module or remove another installation's source tree.
 if ! dkms remove -m '%{upstream_name}' -v '%{dkms_version}' --all --rpm_safe_upgrade; then
     echo 'Warning: TCP Brutal DKMS removal failed; inspect dkms status.' >&2
 fi
 
 %posttrans -n tcp-brutal-dkms
-# Run after kernel/kernel-devel transactions; never build for the host kernel
-# merely because uname -r reports it (e.g. in a container or installroot).
 for module_dir in /usr/lib/modules/*; do
     [ -f "$module_dir/build/Makefile" ] || continue
     kernel=${module_dir##*/}
@@ -101,7 +92,6 @@ for module_dir in /usr/lib/modules/*; do
         echo "Warning: TCP Brutal DKMS build/install failed for $kernel." >&2
     fi
 done
-# Do not force a modprobe/rmmod or alter routing/sysctl in an RPM scriptlet.
 exit 0
 
 %files
