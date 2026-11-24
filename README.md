@@ -46,6 +46,25 @@ A release on the original upstream repository does not trigger this independent
 repository. RPM builds have network disabled; source preparation fetches the
 archive beforehand.
 
+## Manual GitHub Actions
+
+Create a repository secret named `PACKIT_TOKEN` with a fine-grained GitHub
+personal access token for this repository, granting Contents read/write.
+The token's user must have write access and permission to update `main`.
+Do not use the default Actions token for the Packit request.
+
+In the Actions tab, select the `main` branch and run either workflow:
+
+- **Build RPM**: posts the official Packit build command on the current main
+  commit. It requests a build in the existing COPR project without changing the SPEC.
+- **Update SPEC Version**: accepts an upstream tag version and a positive RPM
+  release number, verifies the upstream tag, updates Version, Release and
+  changelog, and commits the SPEC to main. Packit then builds on the push.
+  Unchanged versions are skipped and downgrades are rejected.
+
+The workflows submit a request or commit; COPR reports the actual build
+result. GitHub Actions does not perform the 14 architecture builds itself.
+
 ## Install and verify on Fedora or RHEL 10
 
 On registered RHEL 10, enable CodeReady Builder and EPEL first:

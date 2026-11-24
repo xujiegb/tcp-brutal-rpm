@@ -1,0 +1,110 @@
+name: Update SPEC Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Upstream version (for example 2.0.2)
+        required: true
+        type: string
+      release:
+        description: RPM release number
+        required: true
+        default: '1'
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: tcp-brutal-version-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.PACKIT_TOKEN }}
+      NEW_VERSION: ${{ inputs.version }}
+      NEW_RELEASE: ${{ inputs.release }}
+    steps:
+      - name: Validate and update SPEC
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::Configure the PACKIT_TOKEN repository secret."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import base64
+          import datetime
+          import json
+          import os
+          import re
+          import subprocess
+          import urllib.request
+
+          version = os.environ["NEW_VERSION"].removeprefix("v")
+          release = os.environ["NEW_RELEASE"]
+          if not re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", version):
+              raise SystemExit("Version must be a three-part numeric upstream version.")
+          if not re.fullmatch(r"[1-9][0-9]*", release):
+              raise SystemExit("Release must be a positive integer.")
+
+          with urllib.request.urlopen(
+              f"https://api.github.com/repos/HyNetworks/tcp-brutal/git/ref/tags/v{version}",
+              timeout=30,
+          ) as response:
+              if response.status != 200:
+                  raise SystemExit("Upstream tag does not exist.")
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          endpoint = f"repos/{repo}/contents/tcp-brutal.spec"
+          current = json.loads(subprocess.check_output(
+              ["gh", "api", f"{endpoint}?ref=main"], text=True
+          ))
+          spec = base64.b64decode(current["content"]).decode("utf-8")
+
+          old_version = re.search(r"(?m)^Version:\s*([0-9]+\.[0-9]+\.[0-9]+)[ \t]*$", spec)
+          old_release = re.search(r"(?m)^Release:\s*([0-9]+)%\{\?dist\}[ \t]*$", spec)
+          if old_version is None or old_release is None:
+              raise SystemExit("Unexpected SPEC Version or Release format.")
+          old = (tuple(map(int, old_version.group(1).split("."))), int(old_release.group(1)))
+          new = (tuple(map(int, version.split("."))), int(release))
+          if new == old:
+              print("SPEC already has the requested version and release.")
+              raise SystemExit(0)
+          if new < old:
+              raise SystemExit("Refusing to downgrade the RPM version or release.")
+
+          spec, count_version = re.subn(
+              r"(?m)^(Version:[ \t]*)[^\n]+$", lambda m: m[1] + version, spec
+          )
+          spec, count_release = re.subn(
+              r"(?m)^(Release:[ \t]*)[^\n]+$", lambda m: m[1] + release + "%{?dist}", spec
+          )
+          if count_version != 1 or count_release != 1 or spec.count("%changelog\n") != 1:
+              raise SystemExit("Unexpected SPEC structure.")
+
+          date = datetime.datetime.now(datetime.timezone.utc).strftime("%a %b %d %Y")
+          entry = (
+              f"* {date} TCP Brutal RPM maintainers <packaging@example.invalid> - {version}-{release}\n"
+              f"- Update package to {version}-{release}.\n\n"
+          )
+          spec = spec.replace("%changelog\n", "%changelog\n" + entry, 1)
+          payload = {
+              "message": f"Update TCP Brutal to {version}-{release}",
+              "content": base64.b64encode(spec.encode()).decode(),
+              "sha": current["sha"],
+              "branch": "main",
+          }
+          result = json.loads(subprocess.check_output(
+              ["gh", "api", "--method", "PUT", endpoint, "--input", "-"],
+              input=json.dumps(payload), text=True
+          ))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(f"Updated SPEC to {version}-{release}: {result['commit']['html_url']}\n")
+              summary.write("\nPackit will handle the main branch push.\n")
+          PY
